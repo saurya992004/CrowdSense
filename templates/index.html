@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrowdSense - Real-time Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            text-align: center;
+            margin-top: 50px;
+        }
+        #video-container {
+            position: relative;
+            display: inline-block;
+        }
+        #video-feed {
+            width: 640px;
+            height: 480px;
+            border: 2px solid black;
+        }
+        .dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: red;
+            border-radius: 50%;
+        }
+        #dots-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-Time Crowd Detection</h1>
+        <div id="video-container">
+            <video id="video-feed" autoplay></video>
+            <div id="dots-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch and update the dots on the screen
+        function updateDots() {
+            fetch('/dots')
+                .then(response => response.json())
+                .then(dots => {
+                    const dotsContainer = document.getElementById('dots-container');
+                    dotsContainer.innerHTML = ''; // Clear previous dots
+
+                    dots.forEach(dot => {
+                        const dotElement = document.createElement('div');
+                        dotElement.classList.add('dot');
+                        dotElement.style.left = `${dot.x - 4}px`; // Adjust for dot's center
+                        dotElement.style.top = `${dot.y - 4}px`;  // Adjust for dot's center
+                        dotsContainer.appendChild(dotElement);
+                    });
+                })
+                .catch(error => console.error('Error fetching dots:', error));
+        }
+
+        // Start fetching the dots every 100ms
+        setInterval(updateDots, 100);
+
+        // Set up the video feed
+        const video = document.getElementById('video-feed');
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error('Error accessing the webcam:', error);
+            });
+    </script>
+</body>
+</html>

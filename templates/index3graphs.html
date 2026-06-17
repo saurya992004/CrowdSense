@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CrowdSense - Suspicious Object Detection</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #00ff91;
+      margin-top: 20px;
+    }
+    .video-container {
+      margin-top: 20px;
+    }
+    .stats {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .charts {
+      margin-top: 30px;
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    canvas {
+      background-color: #fff;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .btn {
+      margin-top: 20px;
+      background-color: #00ff91;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 CrowdSense - Suspicious Object & Crowd Monitor</h1>
+
+  <div class="video-container">
+    <img src="{{ url_for('video_feed') }}" width="720" height="480">
+  </div>
+
+  <div class="stats">
+    <h2>Live Stats</h2>
+    <p><strong>People Count:</strong> <span id="count">0</span></p>
+    <p><strong>Pixel Density:</strong> <span id="density">0</span></p>
+    <p><strong>Real World Density (people/m²):</strong> <span id="real_density">0</span></p>
+  </div>
+
+  <div class="charts">
+    <canvas id="countChart" width="300" height="200"></canvas>
+    <canvas id="densityChart" width="300" height="200"></canvas>
+    <canvas id="realDensityChart" width="300" height="200"></canvas>
+  </div>
+
+  <button class="btn" onclick="window.location.href='/export_logs'">Export CSV Logs</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const countData = [], densityData = [], realDensityData = [], labels = [];
+
+    const countChart = new Chart(document.getElementById('countChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'People Count',
+          data: countData,
+          borderColor: 'red',
+          tension: 0.3
+        }]
+      }
+    });
+
+    const densityChart = new Chart(document.getElementById('densityChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Pixel Density',
+          data: densityData,
+          borderColor: 'blue',
+          tension: 0.3
+        }]
+      }
+    });
+
+    const realDensityChart = new Chart(document.getElementById('realDensityChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Real World Density',
+          data: realDensityData,
+          borderColor: 'green',
+          tension: 0.3
+        }]
+      }
+    });
+
+    async function fetchStats() {
+      const res = await fetch('/stats');
+      const data = await res.json();
+      const ts = data.timestamp.split(' ')[1];
+      
+      document.getElementById('count').textContent = data.count;
+      document.getElementById('density').textContent = data.density.toFixed(6);
+      document.getElementById('real_density').textContent = data.real_density.toFixed(2);
+
+      if (labels.length > 30) {
+        labels.shift();
+        countData.shift();
+        densityData.shift();
+        realDensityData.shift();
+      }
+
+      labels.push(ts);
+      countData.push(data.count);
+      densityData.push(data.density);
+      realDensityData.push(data.real_density);
+
+      countChart.update();
+      densityChart.update();
+      realDensityChart.update();
+    }
+
+    setInterval(fetchStats, 1000);
+  </script>
+</body>
+</html>
